@@ -19,7 +19,51 @@ public final class ThemePresets {
         list.add(highContrast());
         list.add(neon());
         list.add(ocean());
+        list.add(imguiClassic());
+        list.add(imguiDark());
+        list.add(imguiCherry());
+        list.add(imguiEmerald());
+        list.add(imguiAmber());
+        list.add(imguiLight());
         return list;
+    }
+
+    // --- ImGui-style flat themes (gray frames + accent), mirroring the collection ----
+    private static Theme imgui(String name, int accent, int bg, int frame, int text, int dim) {
+        Theme t = new Theme(name, accent, accent, accent, bg, frame, frame, text, dim,
+                UiColor.argb(110, 110, 114, 128));
+        t.setOpacity(248);
+        return t;
+    }
+
+    public static Theme imguiClassic() {
+        return imgui("ImGui Classic", UiColor.rgb(66, 150, 250), UiColor.rgb(20, 20, 23),
+                UiColor.rgb(41, 42, 48), UiColor.rgb(236, 236, 240), UiColor.rgb(140, 142, 152));
+    }
+
+    public static Theme imguiDark() {
+        return imgui("ImGui Dark", UiColor.rgb(90, 180, 170), UiColor.rgb(16, 16, 18),
+                UiColor.rgb(33, 34, 38), UiColor.rgb(228, 230, 232), UiColor.rgb(128, 130, 138));
+    }
+
+    public static Theme imguiCherry() {
+        return imgui("ImGui Cherry", UiColor.rgb(233, 69, 96), UiColor.rgb(26, 18, 24),
+                UiColor.rgb(48, 34, 44), UiColor.rgb(240, 228, 234), UiColor.rgb(170, 140, 155));
+    }
+
+    public static Theme imguiEmerald() {
+        return imgui("ImGui Emerald", UiColor.rgb(46, 204, 113), UiColor.rgb(16, 22, 19),
+                UiColor.rgb(30, 40, 35), UiColor.rgb(226, 238, 230), UiColor.rgb(130, 150, 138));
+    }
+
+    public static Theme imguiAmber() {
+        return imgui("ImGui Amber", UiColor.rgb(245, 166, 35), UiColor.rgb(24, 20, 14),
+                UiColor.rgb(44, 38, 28), UiColor.rgb(240, 234, 220), UiColor.rgb(166, 156, 132));
+    }
+
+    public static Theme imguiLight() {
+        return imgui("ImGui Light", UiColor.rgb(66, 150, 250), UiColor.rgb(222, 224, 228),
+                UiColor.rgb(244, 245, 248), UiColor.rgb(28, 30, 36), UiColor.rgb(110, 114, 126));
     }
 
     public static Theme byName(String name) {
@@ -31,14 +75,19 @@ public final class ThemePresets {
         return night();
     }
 
-    /** Default: a deep night-blue frosted glass with a smooth indigo gradient. */
+    /** Default: a WindUI-style deep "Night" indigo on near-black, flat with an indigo accent. */
     public static Theme night() {
         Theme t = new Theme("Night",
-                UiColor.rgb(129, 140, 248), UiColor.rgb(94, 234, 212), UiColor.rgb(250, 204, 120),
-                UiColor.argb(225, 15, 17, 30),
-                UiColor.argb(225, 38, 42, 78), UiColor.argb(230, 15, 17, 34),
-                UiColor.rgb(235, 238, 250), UiColor.rgb(150, 156, 184), UiColor.argb(150, 120, 132, 240));
-        t.setOpacity(225);
+                UiColor.rgb(99, 102, 241),   // primary  (indigo-500 accent)
+                UiColor.rgb(129, 140, 248),  // secondary(indigo-400)
+                UiColor.rgb(129, 140, 248),  // accent
+                UiColor.rgb(16, 17, 28),     // background (window fill)
+                UiColor.rgb(28, 30, 46),     // panelTop  (card fill, flat)
+                UiColor.rgb(24, 26, 40),     // panelBottom
+                UiColor.rgb(236, 238, 248),  // text
+                UiColor.rgb(148, 154, 178),  // textDim (placeholder/icon)
+                UiColor.argb(46, 150, 158, 210)); // border (hairline, translucent)
+        t.setOpacity(246);
         return t;
     }
 

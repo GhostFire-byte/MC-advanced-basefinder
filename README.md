@@ -45,6 +45,20 @@ examples/                        usage examples
 ./gradlew test
 ```
 
+## Preview the GUI (no Minecraft)
+
+See the real overlay in a desktop window — Night glass theme, draggable radar /
+compact panel / dashboard, resize, UI-scale slider and fade:
+
+```
+./gradlew previewGui
+```
+
+Controls: **I** opens/closes the config dashboard, drag the radar / compact panel /
+dashboard, drag the dashboard's bottom-right corner to resize, **R** resets the
+layout, **Esc** closes. (The window uses sample data via a Java2D renderer that
+implements the same `Renderer` the Minecraft `BlazeRenderer` does.)
+
 See [docs/BUILD.md](docs/BUILD.md) to compile the Minecraft adapters and [docs/INTEGRATION.md](docs/INTEGRATION.md) to wire it into your client.
 
 ## Honesty about verification

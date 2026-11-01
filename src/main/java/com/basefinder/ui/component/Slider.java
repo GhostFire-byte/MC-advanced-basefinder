@@ -4,12 +4,13 @@ import com.basefinder.ui.InputEvent;
 import com.basefinder.ui.Rect;
 import com.basefinder.ui.Renderer;
 import com.basefinder.ui.UiColor;
+import com.basefinder.ui.UiDraw;
 import com.basefinder.ui.theme.ThemeManager;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-/** A horizontal value slider over an integer range. */
+/** WindUI-style slider: label with a value pill, an accent-filled track and a round knob. */
 public final class Slider extends Component {
 
     private final String label;
@@ -32,16 +33,42 @@ public final class Slider extends Component {
         if (!visible) {
             return;
         }
+        var th = theme.active();
         int value = clamp(getter.get());
-        r.text(label + ": " + value, bounds.x(), bounds.y(), theme.active().text(), true);
-        int trackY = bounds.y() + bounds.h() - 6;
-        Rect track = new Rect(bounds.x(), trackY, bounds.w(), 4);
-        r.fill(track, UiColor.rgb(70, 70, 82));
+        if (theme.imgui()) {
+            // ImGui slider: label above, a framed track with a grab and centered value.
+            r.text(label, bounds.x(), bounds.y(), th.text(), true);
+            Rect frame = new Rect(bounds.x(), bounds.y() + bounds.h() - 16, bounds.w(), 15);
+            UiDraw.roundedRect(r, frame, 2, th.panelTop());
+            UiDraw.roundedOutline(r, frame, 2, UiColor.withAlpha(th.border(), 200), 1f);
+            double tt = (value - min) / (double) (max - min);
+            int grabW = Math.max(8, frame.w() / 12);
+            int gx = frame.x() + (int) ((frame.w() - grabW) * tt);
+            UiDraw.roundedRect(r, new Rect(gx, frame.y() + 1, grabW, frame.h() - 2), 2,
+                    UiColor.withAlpha(th.accent(), 235));
+            String vs = String.valueOf(value);
+            r.text(vs, frame.centerX() - r.textWidth(vs) / 2, frame.y() + 3, th.text(), true);
+            return;
+        }
+        r.text(label, bounds.x(), bounds.y(), th.text(), true);
+
+        // Value pill (rounded) on the right.
+        String vs = String.valueOf(value);
+        int pw = Math.max(26, r.textWidth(vs) + 16);
+        Rect pill = new Rect(bounds.right() - pw, bounds.y() - 2, pw, 18);
+        UiDraw.roundedRect(r, pill, 9, UiColor.withAlpha(th.accent(), 40));
+        UiDraw.roundedOutline(r, pill, 9, UiColor.withAlpha(th.text(), 36), 1f);
+        r.text(vs, pill.centerX() - r.textWidth(vs) / 2, pill.y() + 4, th.text(), true);
+
+        int trackY = bounds.y() + bounds.h() - 8;
+        Rect track = new Rect(bounds.x(), trackY, bounds.w(), 5);
+        UiDraw.roundedRect(r, track, 2, UiColor.withAlpha(th.text(), 28));
         double t = (value - min) / (double) (max - min);
         int fillW = (int) (bounds.w() * t);
-        r.fill(new Rect(bounds.x(), trackY, fillW, 4), theme.active().accent());
-        int knobX = bounds.x() + fillW;
-        r.fill(new Rect(knobX - 3, trackY - 4, 6, 12), UiColor.rgb(240, 240, 248));
+        UiDraw.roundedRect(r, new Rect(bounds.x(), trackY, Math.max(4, fillW), 5), 2, th.accent());
+        double knobX = bounds.x() + fillW;
+        r.filledCircle(knobX, trackY + 2.5, 6, UiColor.withAlpha(0x000000, 50));
+        r.filledCircle(knobX, trackY + 2.5, 5.5, UiColor.rgb(245, 246, 252));
     }
 
     @Override

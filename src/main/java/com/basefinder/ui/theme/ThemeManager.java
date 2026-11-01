@@ -1,5 +1,7 @@
 package com.basefinder.ui.theme;
 
+import com.basefinder.ui.GuiStyle;
+
 import java.util.List;
 
 /** Holds the active theme and style mode, and resolves presets by name. */
@@ -7,6 +9,7 @@ public final class ThemeManager {
 
     private Theme active = ThemePresets.night();
     private StyleMode styleMode = StyleMode.POLISHED;
+    private GuiStyle guiStyle = GuiStyle.WINDUI;
 
     public Theme active() {
         return active;
@@ -30,6 +33,18 @@ public final class ThemeManager {
 
     public boolean polished() {
         return styleMode == StyleMode.POLISHED;
+    }
+
+    public GuiStyle guiStyle() {
+        return guiStyle;
+    }
+
+    public void setGuiStyle(GuiStyle style) {
+        this.guiStyle = style;
+    }
+
+    public boolean imgui() {
+        return guiStyle == GuiStyle.IMGUI;
     }
 
     public List<Theme> presets() {

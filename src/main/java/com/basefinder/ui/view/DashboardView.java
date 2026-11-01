@@ -21,9 +21,9 @@ import com.basefinder.ui.UiModel;
 import com.basefinder.ui.UiState;
 import com.basefinder.ui.component.Button;
 import com.basefinder.ui.component.Component;
+import com.basefinder.ui.component.Dropdown;
 import com.basefinder.ui.component.ScrollPanel;
 import com.basefinder.ui.component.Slider;
-import com.basefinder.ui.component.TabBar;
 import com.basefinder.ui.component.ToggleSwitch;
 import com.basefinder.ui.theme.StyleMode;
 import com.basefinder.ui.theme.Theme;
@@ -44,11 +44,17 @@ public final class DashboardView {
     private final UiModel model;
     private final UiCommands commands;
     private final UiState state;
-    private final TabBar tabBar;
     private final ScrollPanel scroll = new ScrollPanel();
     private final List<Component> active = new ArrayList<>();
+    private final List<Rect> tabRects = new ArrayList<>();
+    private int selectedTab = 0;
+    private double mouseX;
+    private double mouseY;
+    private final Dropdown guiStyleDropdown;
     private Rect window = new Rect(0, 0, 0, 0);
     private Rect titleBar = new Rect(0, 0, 0, 0);
+    private Rect sidebar = new Rect(0, 0, 0, 0);
+    private Rect content = new Rect(0, 0, 0, 0);
     private Rect resizeHandle = new Rect(0, 0, 0, 0);
     private Rect body = new Rect(0, 0, 0, 0);
 
@@ -62,7 +68,11 @@ public final class DashboardView {
         this.model = model;
         this.commands = commands;
         this.state = state;
-        this.tabBar = new TabBar(TABS);
+        this.guiStyleDropdown = new Dropdown("GUI style",
+                java.util.List.of("WindUI", "ImGui"),
+                () -> model.theme().imgui() ? "ImGui" : "WindUI",
+                v -> model.theme().setGuiStyle(
+                        "ImGui".equals(v) ? com.basefinder.ui.GuiStyle.IMGUI : com.basefinder.ui.GuiStyle.WINDUI));
     }
 
     public Rect window() {
@@ -79,30 +89,60 @@ public final class DashboardView {
 
     private void layout(Renderer r) {
         active.clear();
+        tabRects.clear();
         double sc = state.uiScale;
-        int defW = (int) Math.round(640 * sc);
-        int defH = (int) Math.round(404 * sc);
+        int defW = (int) Math.round(760 * sc);
+        int defH = (int) Math.round(470 * sc);
         int w = Math.min(state.dashW != null ? state.dashW : defW, r.screenWidth() - 24);
         int h = Math.min(state.dashH != null ? state.dashH : defH, r.screenHeight() - 24);
-        w = Math.max(w, 360);
-        h = Math.max(h, 240);
+        w = Math.max(w, 460);
+        h = Math.max(h, 300);
         int x = state.dashX != null ? clamp(state.dashX, 0, r.screenWidth() - w) : (r.screenWidth() - w) / 2;
         int y = state.dashY != null ? clamp(state.dashY, 0, r.screenHeight() - h) : (r.screenHeight() - h) / 2;
         window = new Rect(x, y, w, h);
-        int titleH = (int) Math.round(30 * sc);
-        titleBar = new Rect(x, y, w, titleH);
+        boolean imgui = model.theme().imgui();
         int handle = (int) Math.round(16 * sc);
         resizeHandle = new Rect(x + w - handle, y + h - handle, handle, handle);
 
-        int tabY = y + titleH + (int) Math.round(6 * sc);
-        int tabH = (int) Math.round(22 * sc);
-        tabBar.setBounds(new Rect(x + 10, tabY, w - 20, tabH));
-        active.add(tabBar);
-
-        int bodyTop = tabY + tabH + (int) Math.round(8 * sc);
-        this.body = new Rect(x + 12, bodyTop, w - 24, window.bottom() - bodyTop - 12);
+        if (imgui) {
+            int titleH = (int) Math.round(26 * sc);
+            titleBar = new Rect(x, y, w, titleH);
+            sidebar = new Rect(0, 0, 0, 0);
+            // Horizontal tab bar below the title bar.
+            int tabRowY = y + titleH;
+            int tabH = (int) Math.round(22 * sc);
+            int tx = x + (int) Math.round(6 * sc);
+            for (int i = 0; i < TABS.size(); i++) {
+                int tw = r.textWidthScaled(TABS.get(i), (float) sc) + (int) Math.round(18 * sc);
+                tabRects.add(new Rect(tx, tabRowY + 2, tw, tabH));
+                tx += tw + (int) Math.round(2 * sc);
+            }
+            content = new Rect(x, tabRowY + tabH + 3, w, h - titleH - tabH - 3)
+                    .inset((int) Math.round(8 * sc));
+            int bodyTop = content.y() + (int) Math.round(6 * sc);
+            this.body = new Rect(content.x() + (int) Math.round(8 * sc), bodyTop,
+                    content.w() - (int) Math.round(16 * sc), content.bottom() - bodyTop - (int) Math.round(8 * sc));
+        } else {
+            int titleH = (int) Math.round(46 * sc);
+            titleBar = new Rect(x, y, w, titleH);
+            int side = Math.min((int) Math.round(170 * sc), w / 3);
+            sidebar = new Rect(x, y + titleH, side, h - titleH);
+            content = new Rect(x + side, y + titleH, w - side, h - titleH).inset((int) Math.round(10 * sc));
+            int tabH = (int) Math.round(36 * sc);
+            int gap = (int) Math.round(6 * sc);
+            int ty = sidebar.y() + (int) Math.round(10 * sc);
+            for (int i = 0; i < TABS.size(); i++) {
+                tabRects.add(new Rect(sidebar.x() + (int) Math.round(10 * sc), ty,
+                        sidebar.w() - (int) Math.round(20 * sc), tabH));
+                ty += tabH + gap;
+            }
+            int header = (int) Math.round(42 * sc);
+            int bodyTop = content.y() + header;
+            this.body = new Rect(content.x() + (int) Math.round(14 * sc), bodyTop,
+                    content.w() - (int) Math.round(28 * sc), content.bottom() - bodyTop - (int) Math.round(12 * sc));
+        }
         scroll.setBounds(body);
-        switch (tabBar.selected()) {
+        switch (selectedTab) {
             case 0 -> layoutOverview(body);
             case 1 -> layoutScanners(body);
             case 3 -> layoutRules(body);
@@ -119,24 +159,31 @@ public final class DashboardView {
     private void layoutOverview(Rect body) {
         int x = body.x();
         int y = body.y();
+        int colW = body.w() / 2 - 10;
+        int colX = x + body.w() / 2 + 4;
+        int sh = (int) Math.round(30 * state.uiScale);
+        int rowGap = (int) Math.round(44 * state.uiScale);
         var g = model.globals();
         add(new Slider("Confidence floor %", 0, 100, g::confidenceFloor, commands::setConfidenceFloor),
-                new Rect(x, y, body.w() / 2 - 8, 26));
+                new Rect(x, y, colW, sh));
         add(new Slider("Detection radius (chunks)", 1, 16, g::detectionRadiusChunks, commands::setDetectionRadius),
-                new Rect(x + body.w() / 2 + 2, y, body.w() / 2 - 8, 26));
-        y += 32;
+                new Rect(colX, y, colW, sh));
+        y += rowGap;
         add(new Slider("Radar range", 16, 256, g::radarRange, commands::setRadarRange),
-                new Rect(x, y, body.w() / 2 - 8, 26));
+                new Rect(x, y, colW, sh));
         add(new ToggleSwitch(g::overlayEnabled, commands::setOverlayEnabled),
-                new Rect(x + body.w() / 2 + 2, y + 8, 36, 16));
-        y += 36;
+                new Rect(colX, y + (int) Math.round(6 * state.uiScale), (int) Math.round(40 * state.uiScale),
+                        (int) Math.round(20 * state.uiScale)));
+        y += rowGap;
+        int bw = (int) Math.round(84 * state.uiScale);
+        int bh = (int) Math.round(22 * state.uiScale);
         add(new Button("Light").secondary().onClick(() -> commands.setAggressiveness(ScanAggressiveness.LIGHT)),
-                new Rect(x, y, 70, 20));
+                new Rect(x, y, bw, bh));
         add(new Button("Balanced").onClick(() -> commands.setAggressiveness(ScanAggressiveness.BALANCED)),
-                new Rect(x + 76, y, 80, 20));
+                new Rect(x + bw + 6, y, bw, bh));
         add(new Button("Aggressive").secondary().onClick(() -> commands.setAggressiveness(ScanAggressiveness.AGGRESSIVE)),
-                new Rect(x + 162, y, 90, 20));
-        y += 28;
+                new Rect(x + 2 * (bw + 6), y, bw, bh));
+        y += (int) Math.round(34 * state.uiScale);
         add(new ToggleSwitch(g::espOutlines, v -> commands.setEsp(v, g.espBoxes(), g.espLabels(), g.espIcons())),
                 new Rect(x, y, 36, 16));
         add(new ToggleSwitch(g::espBoxes, v -> commands.setEsp(g.espOutlines(), v, g.espLabels(), g.espIcons())),
@@ -148,7 +195,7 @@ public final class DashboardView {
     }
 
     private void layoutScanners(Rect body) {
-        int rowH = 24;
+        int rowH = (int) Math.round(24 * state.uiScale);
         scroll.setContentHeight(model.scanners().size() * rowH);
         int y = scroll.originY();
         for (ScannerInfo s : model.scanners()) {
@@ -200,6 +247,9 @@ public final class DashboardView {
                 v -> state.uiScale = v / 100.0), new Rect(x, y, 200, 24));
         add(new Button("Reset layout").secondary().onClick(state::resetLayout),
                 new Rect(x + 210, y, 120, 20));
+        y += 40;
+        // GUI style selector (persistent instance so its open state survives re-layout).
+        add(guiStyleDropdown, new Rect(x, y, 160, 22));
     }
 
     private void add(Component c, Rect bounds) {
@@ -212,25 +262,19 @@ public final class DashboardView {
         var th = model.theme().active();
         double fade = Math.max(0.0, Math.min(1.0, state.dashFade));
         float sc = state.textScale();
+        int ink = alpha(th.text(), fade);
+        int dim = alpha(th.textDim(), fade);
+        int acc = alpha(th.accent(), fade);
+        int borderFade = UiColor.withAlpha(th.border(), (int) Math.round(UiColor.alpha(th.border()) * fade));
 
-        // Frosted window with open/close fade.
-        UiDraw.glassPanel(r, window, th, model.theme().polished(), 12, fade);
-        // Title bar accent strip.
-        UiDraw.roundedGradient(r, new Rect(titleBar.x(), titleBar.y(), titleBar.w(), titleBar.h()),
-                12, UiColor.withAlpha(th.panelTop(), (int) Math.round(th.opacity() * fade)),
-                UiColor.withAlpha(th.panelBottom(), (int) Math.round(th.opacity() * 0.6 * fade)));
-        r.line(titleBar.x() + 10, titleBar.bottom(), titleBar.right() - 10, titleBar.bottom(),
-                UiColor.withAlpha(th.border(), (int) Math.round(200 * fade)), 1f);
-
-        int ink = UiColor.withAlpha(th.primary(), (int) Math.round(255 * fade));
-        int dim = UiColor.withAlpha(th.textDim(), (int) Math.round(255 * fade));
-        r.textScaled("BaseFinder", titleBar.x() + 12,
-                titleBar.centerY() - r.lineHeightScaled(sc * 1.25f) / 2, ink, true, sc * 1.25f);
-        r.textScaled("INSERT to close", titleBar.right() - r.textWidthScaled("INSERT to close", sc) - 12,
-                titleBar.centerY() - r.lineHeightScaled(sc) / 2, dim, true, sc);
+        if (model.theme().imgui()) {
+            renderImGuiChrome(r, th, fade, sc, ink, dim, acc, borderFade);
+        } else {
+            renderWindUiChrome(r, th, fade, sc, ink, dim, acc, borderFade);
+        }
 
         r.pushClip(body);
-        switch (tabBar.selected()) {
+        switch (selectedTab) {
             case 1 -> renderScanners(r, body);
             case 2 -> renderFindings(r, body);
             case 3 -> renderRules(r, body);
@@ -242,15 +286,82 @@ public final class DashboardView {
         for (Component c : active) {
             c.render(r, model.theme());
         }
-        if (tabBar.selected() == 0) {
+        if (selectedTab == 0) {
             overlayOverviewLabels(r, body);
         }
         // Resize grip (three diagonal ticks).
-        int grip = UiColor.withAlpha(th.border(), (int) Math.round(220 * fade));
+        int grip = UiColor.withAlpha(th.textDim(), (int) Math.round(200 * fade));
         for (int i = 1; i <= 3; i++) {
             r.line(resizeHandle.right() - i * 4, resizeHandle.bottom() - 2,
                     resizeHandle.right() - 2, resizeHandle.bottom() - i * 4, grip, 1f);
         }
+    }
+
+    private void renderWindUiChrome(Renderer r, com.basefinder.ui.theme.Theme th, double fade,
+                                    float sc, int ink, int dim, int acc, int borderFade) {
+        int rad = (int) Math.round(16 * state.uiScale);
+        UiDraw.windowPanel(r, window, th, rad, fade);
+        r.textScaled("BaseFinder", titleBar.x() + (int) Math.round(18 * sc),
+                titleBar.y() + (int) Math.round(10 * sc), ink, false, sc * 1.3f);
+        r.textScaled("Advanced world analysis", titleBar.x() + (int) Math.round(18 * sc),
+                titleBar.y() + (int) Math.round(10 * sc) + r.lineHeightScaled(sc * 1.3f), dim, false, sc * 0.9f);
+        String hint = "I to close";
+        r.textScaled(hint, titleBar.right() - r.textWidthScaled(hint, sc) - (int) Math.round(16 * sc),
+                titleBar.centerY() - r.lineHeightScaled(sc) / 2, dim, false, sc);
+        r.line(titleBar.x() + 12, titleBar.bottom(), titleBar.right() - 12, titleBar.bottom(), borderFade, 1f);
+
+        for (int i = 0; i < tabRects.size(); i++) {
+            Rect tr = tabRects.get(i);
+            boolean sel = i == selectedTab;
+            boolean hov = tr.contains(mouseX, mouseY);
+            int fillA = (int) Math.round(((sel ? 26 : 0) + (hov ? 12 : 0)) * fade);
+            if (fillA > 0) {
+                UiDraw.roundedRect(r, tr, (int) Math.round(8 * sc), UiColor.withAlpha(th.text(), fillA));
+            }
+            if (sel) {
+                // Accent bar on the left edge marks the active tab.
+                UiDraw.roundedRect(r, new Rect(tr.x() + 2, tr.y() + 6, (int) Math.round(3 * sc), tr.h() - 12),
+                        2, acc);
+            }
+            r.textScaled(TABS.get(i), tr.x() + (int) Math.round(16 * sc),
+                    tr.centerY() - r.lineHeightScaled(sc) / 2, sel ? ink : dim, false, sc);
+        }
+
+        UiDraw.card(r, content, th, (int) Math.round(12 * state.uiScale), 0, fade);
+        r.textScaled(TABS.get(selectedTab), content.x() + (int) Math.round(16 * sc),
+                content.y() + (int) Math.round(12 * sc), ink, false, sc * 1.1f);
+        r.line(content.x() + 12, content.y() + (int) Math.round(40 * sc), content.right() - 12,
+                content.y() + (int) Math.round(40 * sc), borderFade, 1f);
+    }
+
+    private void renderImGuiChrome(Renderer r, com.basefinder.ui.theme.Theme th, double fade,
+                                   float sc, int ink, int dim, int acc, int borderFade) {
+        // Flat Dear-ImGui window: thin border, darker title bar, underlined active tab.
+        int winA = (int) Math.round(th.opacity() * fade);
+        UiDraw.shadow(r, window, 3, 4, fade);
+        UiDraw.roundedRect(r, window, 3, UiColor.withAlpha(th.background(), winA));
+        UiDraw.roundedOutline(r, window, 3, borderFade, 1f);
+        // Title bar strip (frame colour) + collapse dot + title.
+        UiDraw.roundedRect(r, titleBar, 3, UiColor.withAlpha(th.panelTop(), winA));
+        r.triangle(titleBar.x() + 10, titleBar.centerY() - 3, titleBar.x() + 16, titleBar.centerY() - 3,
+                titleBar.x() + 13, titleBar.centerY() + 3, acc);
+        r.textScaled("BaseFinder", titleBar.x() + (int) Math.round(24 * sc),
+                titleBar.centerY() - r.lineHeightScaled(sc) / 2, ink, false, sc);
+        r.line(titleBar.x(), titleBar.bottom(), titleBar.right(), titleBar.bottom(), borderFade, 1f);
+
+        for (int i = 0; i < tabRects.size(); i++) {
+            Rect tr = tabRects.get(i);
+            boolean sel = i == selectedTab;
+            boolean hov = tr.contains(mouseX, mouseY);
+            int fillA = (int) Math.round(((sel ? 255 : hov ? 90 : 40) * fade));
+            int base = sel ? th.accent() : th.panelTop();
+            UiDraw.roundedRect(r, tr, 3, UiColor.withAlpha(base, sel ? winA : fillA));
+            r.textScaled(TABS.get(i), tr.centerX() - r.textWidthScaled(TABS.get(i), sc) / 2,
+                    tr.centerY() - r.lineHeightScaled(sc) / 2, sel ? UiColor.rgb(16, 17, 24) : dim, false, sc);
+        }
+        // Content frame.
+        UiDraw.roundedRect(r, content, 3, UiColor.withAlpha(th.panelTop(), (int) Math.round(120 * fade)));
+        UiDraw.roundedOutline(r, content, 3, borderFade, 1f);
     }
 
     private void overlayOverviewLabels(Renderer r, Rect body) {
@@ -263,71 +374,93 @@ public final class DashboardView {
     }
 
     private void renderScanners(Renderer r, Rect body) {
-        int rowH = 24;
+        float sc = state.textScale();
+        int rowH = (int) Math.round(24 * state.uiScale);
         int y = scroll.originY();
         for (ScannerInfo s : model.scanners()) {
             if (y + rowH >= body.y() && y <= body.bottom()) {
                 int dot = s.healthy() ? UiColor.rgb(80, 200, 120) : UiColor.rgb(230, 110, 90);
-                r.filledCircle(body.x() + 6, y + rowH / 2, 3, s.enabled() ? dot : UiColor.rgb(100, 100, 110));
-                r.text(s.name(), body.x() + 16, y + 2, model.theme().active().text(), true);
-                r.text(String.format("%.1fms  %d found", s.lastScanMs(), s.lastFindingCount()),
-                        body.x() + 16, y + 2 + r.lineHeight() / 2 + 2, model.theme().active().textDim(), true);
+                r.filledCircle(body.x() + 6, y + rowH / 2.0, 3 * sc, s.enabled() ? dot : UiColor.rgb(100, 100, 110));
+                r.textScaled(s.name(), body.x() + 16, y + 2, model.theme().active().text(), true, sc);
+                r.textScaled(String.format("%.1fms  %d found", s.lastScanMs(), s.lastFindingCount()),
+                        body.x() + 16, y + 2 + r.lineHeightScaled(sc) / 2, model.theme().active().textDim(), true, sc * 0.85f);
             }
             y += rowH;
         }
     }
 
     private void renderFindings(Renderer r, Rect body) {
+        float sc = state.textScale();
+        int rowH = (int) Math.round(15 * state.uiScale);
         List<Finding> findings = model.allFindings();
-        scroll.setContentHeight(findings.size() * 14);
+        scroll.setContentHeight(findings.size() * rowH);
         int y = scroll.originY();
         for (Finding f : findings) {
-            if (y + 14 >= body.y() && y <= body.bottom()) {
+            if (y + rowH >= body.y() && y <= body.bottom()) {
                 int color = UiColor.confidence(f.confidence());
-                r.text(f.confidence() + "%", body.x(), y, color, true);
-                r.text(f.label(), body.x() + 34, y, model.theme().active().text(), true);
+                r.textScaled(f.confidence() + "%", body.x(), y, color, true, sc);
+                r.textScaled(f.label(), body.x() + (int) Math.round(38 * sc), y, model.theme().active().text(), true, sc);
                 String coords = f.pos().toString();
-                r.text(coords, body.right() - r.textWidth(coords) - 2, y, model.theme().active().textDim(), true);
+                r.textScaled(coords, body.right() - r.textWidthScaled(coords, sc) - 2, y,
+                        model.theme().active().textDim(), true, sc);
             }
-            y += 14;
+            y += rowH;
         }
         if (findings.isEmpty()) {
-            r.text("No findings yet.", body.x(), body.y(), model.theme().active().textDim(), true);
+            r.textScaled("No findings yet.", body.x(), body.y(), model.theme().active().textDim(), true, sc);
         }
     }
 
     private void renderRules(Renderer r, Rect body) {
-        int y = body.y() + 56;
+        float sc = state.textScale();
+        int y = body.y() + (int) Math.round(56 * state.uiScale);
         for (Rule rule : model.rules()) {
-            r.text((rule.enabled() ? "\u25CF " : "\u25CB ") + rule.name(), body.x(), y,
-                    model.theme().active().text(), true);
-            y += 22;
+            r.textScaled((rule.enabled() ? "\u25CF " : "\u25CB ") + rule.name(), body.x(), y,
+                    model.theme().active().text(), true, sc);
+            y += (int) Math.round(22 * state.uiScale);
         }
         if (model.rules().isEmpty()) {
-            r.text("No rules. Add presets or build one above.", body.x(), y, model.theme().active().textDim(), true);
+            r.textScaled("No rules. Add presets or build one above.", body.x(), y,
+                    model.theme().active().textDim(), true, sc);
         }
     }
 
     private void renderDiagnostics(Renderer r, Rect body) {
+        float sc = state.textScale();
+        int rowH = (int) Math.round(13 * state.uiScale);
         var logs = model.logs();
-        scroll.setContentHeight(logs.size() * 12 + 14);
+        scroll.setContentHeight(logs.size() * rowH + rowH);
         int y = scroll.originY();
-        r.text("Data source: " + model.dataSourceNote(), body.x(), y, model.theme().active().textDim(), true);
-        y += 14;
+        r.textScaled("Data source: " + model.dataSourceNote(), body.x(), y,
+                model.theme().active().textDim(), true, sc);
+        y += rowH;
         for (var e : logs) {
-            if (y + 12 >= body.y() && y <= body.bottom()) {
+            if (y + rowH >= body.y() && y <= body.bottom()) {
                 int color = switch (e.level()) {
                     case ERROR -> UiColor.rgb(230, 110, 90);
                     case WARN -> UiColor.rgb(235, 190, 80);
                     default -> model.theme().active().textDim();
                 };
-                r.text(e.toString(), body.x(), y, color, true);
+                r.textScaled(e.toString(), body.x(), y, color, true, sc * 0.9f);
             }
-            y += 12;
+            y += rowH;
         }
     }
 
     public boolean handle(InputEvent e) {
+        if (e.type() == InputEvent.Type.MOUSE_MOVE || e.type() == InputEvent.Type.MOUSE_DRAG) {
+            mouseX = e.mouseX();
+            mouseY = e.mouseY();
+        }
+        // Sidebar tab selection.
+        if (e.type() == InputEvent.Type.MOUSE_DOWN) {
+            for (int i = 0; i < tabRects.size(); i++) {
+                if (tabRects.get(i).contains(e.mouseX(), e.mouseY())) {
+                    selectedTab = i;
+                    return true;
+                }
+            }
+        }
         if (scroll.handle(e, model.theme())) {
             return true;
         }
@@ -338,6 +471,10 @@ public final class DashboardView {
         }
         // Consume clicks inside the window so they don't fall through to the game.
         return e.type() == InputEvent.Type.MOUSE_DOWN && window.contains(e.mouseX(), e.mouseY());
+    }
+
+    private int alpha(int color, double fade) {
+        return UiColor.withAlpha(color, (int) Math.round(255 * Math.max(0, Math.min(1, fade))));
     }
 
     private void cycleField() {

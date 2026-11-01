@@ -58,3 +58,12 @@ tasks.register('compileMc') {
     description = 'Compiles the Minecraft 26.2 adapters (requires -PmcJar).'
     dependsOn 'compileMcJava'
 }
+
+// Standalone desktop preview of the overlay GUI (no Minecraft needed).
+tasks.register('previewGui', JavaExec) {
+    group = 'application'
+    description = 'Launches the Java2D preview window of the BaseFinder overlay.'
+    dependsOn 'classes'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.basefinder.preview.GuiPreview'
+}

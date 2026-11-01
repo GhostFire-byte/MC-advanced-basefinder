@@ -3,11 +3,12 @@ package com.basefinder.ui.component;
 import com.basefinder.ui.InputEvent;
 import com.basefinder.ui.Rect;
 import com.basefinder.ui.Renderer;
+import com.basefinder.ui.UiAnim;
 import com.basefinder.ui.UiColor;
 import com.basefinder.ui.UiDraw;
 import com.basefinder.ui.theme.ThemeManager;
 
-/** A clickable button. */
+/** A clickable button, WindUI-flat: accent fill for primary, subtle fill for secondary, eased hover. */
 public final class Button extends Component {
 
     private String label;
@@ -15,6 +16,7 @@ public final class Button extends Component {
     };
     private boolean hovered;
     private boolean primary = true;
+    private final UiAnim hover = new UiAnim(0);
 
     public Button(String label) {
         this.label = label;
@@ -44,23 +46,30 @@ public final class Button extends Component {
         if (!visible) {
             return;
         }
-        int base = primary ? theme.active().primary() : theme.active().secondary();
-        int fill = hovered ? UiColor.lerp(base, UiColor.rgb(255, 255, 255), 0.22) : base;
-        int rad = Math.min(10, bounds.h() / 2);
-        if (hovered) {
-            UiDraw.glow(r, bounds, rad, UiColor.withAlpha(base, 120), 2);
+        var th = theme.active();
+        double hv = hover.step(hovered ? 1.0 : 0.0, 22);
+        if (theme.imgui()) {
+            int fill = primary
+                    ? UiColor.lerp(th.accent(), UiColor.rgb(255, 255, 255), 0.14 * hv)
+                    : UiColor.lerp(th.panelTop(), th.accent(), 0.10 + 0.25 * hv);
+            UiDraw.roundedRect(r, bounds, 2, fill);
+            UiDraw.roundedOutline(r, bounds, 2, UiColor.withAlpha(th.border(), 200), 1f);
+            int ink = primary ? UiColor.rgb(16, 17, 26) : th.text();
+            UiDraw.fitText(r, label, bounds, ink, 1.0f, 0.72f);
+            return;
         }
-        if (theme.polished()) {
-            UiDraw.roundedGradient(r, bounds, rad,
-                    UiColor.withAlpha(fill, 240),
-                    UiColor.withAlpha(UiColor.lerp(fill, 0, 0.42), 240));
+        int rad = Math.min(12, bounds.h() / 2);
+        int ink;
+        if (primary) {
+            int fill = UiColor.lerp(th.accent(), UiColor.rgb(255, 255, 255), 0.12 * hv);
+            UiDraw.roundedRect(r, bounds, rad, fill);
+            ink = UiColor.rgb(16, 17, 26);
         } else {
-            UiDraw.roundedRect(r, bounds, rad, UiColor.withAlpha(fill, 240));
+            UiDraw.roundedRect(r, bounds, rad, UiColor.withAlpha(th.text(), (int) (20 + 24 * hv)));
+            ink = th.text();
         }
-        UiDraw.roundedOutline(r, bounds, rad, UiColor.withAlpha(theme.active().border(), 210), 1f);
-        // Readable label that always fits the button width.
-        int ink = primary ? UiColor.rgb(16, 16, 24) : UiColor.rgb(236, 238, 248);
-        UiDraw.fitText(r, label, bounds, ink, 1.0f, 0.75f);
+        UiDraw.roundedOutline(r, bounds, rad, UiColor.withAlpha(th.text(), (int) (34 + 20 * hv)), 1f);
+        UiDraw.fitText(r, label, bounds, ink, 1.0f, 0.72f);
     }
 
     @Override

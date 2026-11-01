@@ -49,18 +49,33 @@ public final class UiDraw {
         r.filledCircle(b.right() - rad, b.bottom() - rad, rad, bottom);
     }
 
-    /** Soft rounded border traced along the edges and corners. */
+    /** Soft rounded border traced along the edges and quarter-arc corners (no full circles). */
     public static void roundedOutline(Renderer r, Rect b, int rad, int argb, float thickness) {
         rad = clampRadius(b, rad);
         r.line(b.x() + rad, b.y(), b.right() - rad, b.y(), argb, thickness);
         r.line(b.x() + rad, b.bottom(), b.right() - rad, b.bottom(), argb, thickness);
         r.line(b.x(), b.y() + rad, b.x(), b.bottom() - rad, argb, thickness);
         r.line(b.right(), b.y() + rad, b.right(), b.bottom() - rad, argb, thickness);
-        if (rad > 0) {
-            r.circle(b.x() + rad, b.y() + rad, rad, argb, thickness);
-            r.circle(b.right() - rad, b.y() + rad, rad, argb, thickness);
-            r.circle(b.x() + rad, b.bottom() - rad, rad, argb, thickness);
-            r.circle(b.right() - rad, b.bottom() - rad, rad, argb, thickness);
+        if (rad > 1) {
+            arc(r, b.x() + rad, b.y() + rad, rad, 180, 270, argb, thickness);
+            arc(r, b.right() - rad, b.y() + rad, rad, 270, 360, argb, thickness);
+            arc(r, b.right() - rad, b.bottom() - rad, rad, 0, 90, argb, thickness);
+            arc(r, b.x() + rad, b.bottom() - rad, rad, 90, 180, argb, thickness);
+        }
+    }
+
+    private static void arc(Renderer r, double cx, double cy, double rad, double startDeg,
+                            double endDeg, int argb, float thickness) {
+        int seg = Math.max(2, (int) Math.round(rad / 2.0));
+        double prevX = cx + rad * Math.cos(Math.toRadians(startDeg));
+        double prevY = cy + rad * Math.sin(Math.toRadians(startDeg));
+        for (int i = 1; i <= seg; i++) {
+            double a = Math.toRadians(startDeg + (endDeg - startDeg) * i / seg);
+            double nx = cx + rad * Math.cos(a);
+            double ny = cy + rad * Math.sin(a);
+            r.line(prevX, prevY, nx, ny, argb, thickness);
+            prevX = nx;
+            prevY = ny;
         }
     }
 
@@ -97,6 +112,41 @@ public final class UiDraw {
             Rect g = new Rect(b.x() - i, b.y() - i, b.w() + 2 * i, b.h() + 2 * i);
             roundedOutline(r, g, rad + i, UiColor.withAlpha(argb, a), 1f);
         }
+    }
+
+    /** Soft drop shadow: concentric translucent-black rounded outlines expanding from {@code b}. */
+    public static void shadow(Renderer r, Rect b, int rad, int layers, double alphaScale) {
+        for (int i = layers; i >= 1; i--) {
+            int a = (int) Math.round(10 * alphaScale);
+            Rect s = new Rect(b.x() - i, b.y() - i + 3, b.w() + 2 * i, b.h() + 2 * i);
+            roundedRect(r, s, rad + i, UiColor.withAlpha(0x000000, a));
+        }
+    }
+
+    /** WindUI-style flat window: soft shadow, solid rounded body, hairline border. */
+    public static void windowPanel(Renderer r, Rect b, Theme th, int rad, double alphaScale) {
+        int a = (int) Math.round(th.opacity() * clamp01(alphaScale));
+        if (a <= 0) {
+            return;
+        }
+        shadow(r, b, rad, 7, alphaScale);
+        roundedRect(r, b, rad, UiColor.withAlpha(th.background(), a));
+        roundedOutline(r, b, rad, scaleAlpha(th.border(), alphaScale), 1f);
+    }
+
+    /**
+     * WindUI-style flat card: a faint fill (panel colour) over the window, plus a
+     * hairline border. {@code hoverBoost} 0..1 lightens it on hover.
+     */
+    public static void card(Renderer r, Rect b, Theme th, int rad, double hoverBoost,
+                            double alphaScale) {
+        int baseA = (int) Math.round((120 + 40 * clamp01(hoverBoost)) * clamp01(alphaScale));
+        roundedRect(r, b, rad, UiColor.withAlpha(th.panelTop(), baseA));
+        roundedOutline(r, b, rad, scaleAlpha(th.border(), alphaScale), 1f);
+    }
+
+    private static int scaleAlpha(int argb, double alphaScale) {
+        return UiColor.withAlpha(argb, (int) Math.round(UiColor.alpha(argb) * clamp01(alphaScale)));
     }
 
     /**
