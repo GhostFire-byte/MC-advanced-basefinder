@@ -32,6 +32,8 @@ public final class OverlayRoot {
 
     private boolean interactionMode;
     private long lastNanos;
+    private Runnable onLayoutChanged = () -> {
+    };
 
     private Drag drag = Drag.NONE;
     private double grabX;
@@ -44,6 +46,12 @@ public final class OverlayRoot {
 
     public UiState state() {
         return state;
+    }
+
+    /** Called when the layout or scale changes (drag release, reset) so the host can persist it. */
+    public void onLayoutChanged(Runnable r) {
+        this.onLayoutChanged = r != null ? r : () -> {
+        };
     }
 
     /** Selects a dashboard tab (preview/screenshot + host integration helper). */
@@ -60,9 +68,13 @@ public final class OverlayRoot {
     }
 
     public void setInteractionMode(boolean on) {
+        boolean was = this.interactionMode;
         this.interactionMode = on;
         if (!on) {
             drag = Drag.NONE;
+            if (was) {
+                onLayoutChanged.run(); // persist any layout/scale changes on close
+            }
         }
     }
 
@@ -117,6 +129,7 @@ public final class OverlayRoot {
             case MOUSE_UP -> {
                 if (drag != Drag.NONE) {
                     drag = Drag.NONE;
+                    onLayoutChanged.run(); // persist the moved/resized panel
                     return true;
                 }
                 return dashboard.handle(e);

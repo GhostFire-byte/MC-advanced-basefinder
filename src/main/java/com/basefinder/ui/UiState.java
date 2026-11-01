@@ -42,4 +42,61 @@ public final class UiState {
         radarCx = radarCy = null;
         dashX = dashY = dashW = dashH = null;
     }
+
+    /** Writes the layout + scale into a flat string map (for host persistence). */
+    public void exportTo(java.util.Map<String, String> m) {
+        m.put("uiScale", Double.toString(uiScale));
+        putInt(m, "statusX", statusX);
+        putInt(m, "statusY", statusY);
+        putInt(m, "radarCx", radarCx);
+        putInt(m, "radarCy", radarCy);
+        putInt(m, "dashX", dashX);
+        putInt(m, "dashY", dashY);
+        putInt(m, "dashW", dashW);
+        putInt(m, "dashH", dashH);
+    }
+
+    /** Restores the layout + scale from a flat string map. */
+    public void importFrom(java.util.Map<String, String> m) {
+        if (m == null) {
+            return;
+        }
+        uiScale = parseDouble(m.get("uiScale"), uiScale);
+        statusX = parseInt(m.get("statusX"));
+        statusY = parseInt(m.get("statusY"));
+        radarCx = parseInt(m.get("radarCx"));
+        radarCy = parseInt(m.get("radarCy"));
+        dashX = parseInt(m.get("dashX"));
+        dashY = parseInt(m.get("dashY"));
+        dashW = parseInt(m.get("dashW"));
+        dashH = parseInt(m.get("dashH"));
+    }
+
+    private static void putInt(java.util.Map<String, String> m, String k, Integer v) {
+        if (v != null) {
+            m.put(k, Integer.toString(v));
+        }
+    }
+
+    private static Integer parseInt(String s) {
+        if (s == null || s.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static double parseDouble(String s, double fallback) {
+        if (s == null || s.isEmpty()) {
+            return fallback;
+        }
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
 }

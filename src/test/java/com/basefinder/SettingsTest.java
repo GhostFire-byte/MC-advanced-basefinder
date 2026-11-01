@@ -37,6 +37,33 @@ class SettingsTest {
     }
 
     @Test
+    void persistsGuiStyleAndPanelLayout() {
+        InMemorySettingsBridge bridge = new InMemorySettingsBridge();
+        Settings s = new Settings();
+        s.setGuiStyle("IMGUI");
+        com.basefinder.ui.UiState state = new com.basefinder.ui.UiState();
+        state.uiScale = 1.4;
+        state.dashX = 123;
+        state.dashY = 45;
+        state.dashW = 700;
+        state.radarCx = 900;
+        state.exportTo(s.layout());
+        s.save(bridge);
+
+        Settings loaded = new Settings();
+        loaded.load(bridge);
+        assertEquals("IMGUI", loaded.guiStyle());
+        com.basefinder.ui.UiState restored = new com.basefinder.ui.UiState();
+        restored.importFrom(loaded.layout());
+        assertEquals(1.4, restored.uiScale, 1.0e-9);
+        assertEquals(Integer.valueOf(123), restored.dashX);
+        assertEquals(Integer.valueOf(45), restored.dashY);
+        assertEquals(Integer.valueOf(700), restored.dashW);
+        assertEquals(Integer.valueOf(900), restored.radarCx);
+        assertEquals(null, restored.dashH); // unset stays unset
+    }
+
+    @Test
     void perSubsystemFloorIsStricterOfTwo() {
         Settings s = new Settings();
         s.subsystem("x").setConfidenceOverride(90);

@@ -71,8 +71,11 @@ public final class DashboardView {
         this.guiStyleDropdown = new Dropdown("GUI style",
                 java.util.List.of("WindUI", "ImGui"),
                 () -> model.theme().imgui() ? "ImGui" : "WindUI",
-                v -> model.theme().setGuiStyle(
-                        "ImGui".equals(v) ? com.basefinder.ui.GuiStyle.IMGUI : com.basefinder.ui.GuiStyle.WINDUI));
+                v -> {
+                    model.theme().setGuiStyle(
+                            "ImGui".equals(v) ? com.basefinder.ui.GuiStyle.IMGUI : com.basefinder.ui.GuiStyle.WINDUI);
+                    commands.save();
+                });
     }
 
     public Rect window() {

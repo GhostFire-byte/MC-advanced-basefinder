@@ -25,7 +25,15 @@ public final class ThemePresets {
         list.add(imguiEmerald());
         list.add(imguiAmber());
         list.add(imguiLight());
+        list.add(imguiPhobia());
+        list.add(imguiNebula());
         return list;
+    }
+
+    /** Theme names that belong to the Dear-ImGui family (so the ImGui skin is auto-selected). */
+    public static boolean isImguiFamily(String name) {
+        return name != null && (name.startsWith("ImGui") || name.equals("Phobia (8)")
+                || name.equals("Nebula (19)"));
     }
 
     // --- ImGui-style flat themes (gray frames + accent), mirroring the collection ----
@@ -64,6 +72,18 @@ public final class ThemePresets {
     public static Theme imguiLight() {
         return imgui("ImGui Light", UiColor.rgb(66, 150, 250), UiColor.rgb(222, 224, 228),
                 UiColor.rgb(244, 245, 248), UiColor.rgb(28, 30, 36), UiColor.rgb(110, 114, 126));
+    }
+
+    /** Menu 8 "Phobia": minimalist near-black with a clean white accent. */
+    public static Theme imguiPhobia() {
+        return imgui("Phobia (8)", UiColor.rgb(236, 236, 240), UiColor.rgb(14, 14, 16),
+                UiColor.rgb(26, 26, 30), UiColor.rgb(236, 236, 240), UiColor.rgb(120, 120, 128));
+    }
+
+    /** Menu 19: dark navy with a periwinkle-purple accent (142,132,255). */
+    public static Theme imguiNebula() {
+        return imgui("Nebula (19)", UiColor.rgb(142, 132, 255), UiColor.rgb(18, 18, 25),
+                UiColor.rgb(21, 21, 29), UiColor.rgb(235, 236, 245), UiColor.rgb(104, 104, 120));
     }
 
     public static Theme byName(String name) {

@@ -21,6 +21,10 @@ public final class GuiShot {
             shot(outDir + "/windui-" + t + "-" + tabs[t] + ".png", GuiStyle.WINDUI, "Night", t);
             shot(outDir + "/imgui-" + t + "-" + tabs[t] + ".png", GuiStyle.IMGUI, "ImGui Classic", t);
         }
+        shot(outDir + "/phobia-overview.png", GuiStyle.IMGUI, "Phobia (8)", 0);
+        shot(outDir + "/phobia-appearance.png", GuiStyle.IMGUI, "Phobia (8)", 4);
+        shot(outDir + "/nebula-overview.png", GuiStyle.IMGUI, "Nebula (19)", 0);
+        shot(outDir + "/nebula-appearance.png", GuiStyle.IMGUI, "Nebula (19)", 4);
         System.out.println("wrote screenshots to " + new File(outDir).getAbsolutePath());
     }
 

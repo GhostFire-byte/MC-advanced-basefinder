@@ -18,6 +18,7 @@ public final class Settings {
 
     private String themeName = "Premium";
     private String styleMode = "POLISHED"; // POLISHED or FLAT
+    private String guiStyle = "WINDUI";    // WINDUI or IMGUI
     private final Map<String, String> layout = new LinkedHashMap<>();
     private final List<String> ruleData = new ArrayList<>();
 
@@ -47,6 +48,14 @@ public final class Settings {
 
     public void setStyleMode(String v) {
         this.styleMode = v;
+    }
+
+    public String guiStyle() {
+        return guiStyle;
+    }
+
+    public void setGuiStyle(String v) {
+        this.guiStyle = v;
     }
 
     public Map<String, String> layout() {
@@ -97,6 +106,7 @@ public final class Settings {
 
         themeName = m.getOrDefault("theme.name", themeName);
         styleMode = m.getOrDefault("theme.style", styleMode);
+        guiStyle = m.getOrDefault("gui.style", guiStyle);
 
         for (Map.Entry<String, String> e : m.entrySet()) {
             String k = e.getKey();
@@ -161,6 +171,7 @@ public final class Settings {
         m.put("global.aggressiveness", global.aggressiveness().name());
         m.put("theme.name", themeName);
         m.put("theme.style", styleMode);
+        m.put("gui.style", guiStyle);
 
         for (Map.Entry<String, SubsystemSettings> e : subsystems.entrySet()) {
             String id = e.getKey();

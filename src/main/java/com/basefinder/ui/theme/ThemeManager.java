@@ -21,6 +21,8 @@ public final class ThemeManager {
 
     public void selectPreset(String name) {
         this.active = ThemePresets.byName(name);
+        // ImGui-family themes (incl. Phobia 8 and Nebula 19) imply the ImGui skin.
+        this.guiStyle = ThemePresets.isImguiFamily(name) ? GuiStyle.IMGUI : GuiStyle.WINDUI;
     }
 
     public StyleMode styleMode() {

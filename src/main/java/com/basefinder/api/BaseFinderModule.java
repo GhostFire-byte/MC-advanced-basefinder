@@ -78,6 +78,7 @@ public final class BaseFinderModule implements UiModel, UiCommands {
         DefaultScanners.registerAll(registry);
         this.engine = new AnalysisEngine(registry, settings, worldSource, fusion, log);
         this.overlay = new OverlayRoot(this, this);
+        this.overlay.onLayoutChanged(this::save);
         loadSettings();
         engine.setCallback(this::onCycle);
     }
@@ -208,6 +209,10 @@ public final class BaseFinderModule implements UiModel, UiCommands {
         }
         themeManager.selectPreset(settings.themeName());
         themeManager.setStyleMode("FLAT".equalsIgnoreCase(settings.styleMode()) ? StyleMode.FLAT : StyleMode.POLISHED);
+        // GUI skin (overrides the theme-implied default) + saved panel layout / UI scale.
+        themeManager.setGuiStyle("IMGUI".equalsIgnoreCase(settings.guiStyle())
+                ? com.basefinder.ui.GuiStyle.IMGUI : com.basefinder.ui.GuiStyle.WINDUI);
+        overlay.state().importFrom(settings.layout());
         ruleEngine.importFrom(settings.ruleData());
     }
 
@@ -215,6 +220,9 @@ public final class BaseFinderModule implements UiModel, UiCommands {
     public void save() {
         settings.setThemeName(themeManager.active().name());
         settings.setStyleMode(themeManager.styleMode().name());
+        settings.setGuiStyle(themeManager.guiStyle().name());
+        settings.layout().clear();
+        overlay.state().exportTo(settings.layout());
         settings.ruleData().clear();
         settings.ruleData().addAll(ruleEngine.export());
         settings.save(bridge);

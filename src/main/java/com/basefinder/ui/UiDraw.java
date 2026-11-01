@@ -24,13 +24,23 @@ public final class UiDraw {
             r.fill(b, argb);
             return;
         }
+        // Non-overlapping body (so a translucent fill never double-blends).
         r.fill(new Rect(b.x() + rad, b.y(), b.w() - 2 * rad, b.h()), argb);
         r.fill(new Rect(b.x(), b.y() + rad, rad, b.h() - 2 * rad), argb);
         r.fill(new Rect(b.right() - rad, b.y() + rad, rad, b.h() - 2 * rad), argb);
-        r.filledCircle(b.x() + rad, b.y() + rad, rad, argb);
-        r.filledCircle(b.right() - rad, b.y() + rad, rad, argb);
-        r.filledCircle(b.x() + rad, b.bottom() - rad, rad, argb);
-        r.filledCircle(b.right() - rad, b.bottom() - rad, rad, argb);
+        // Corner arcs, each clipped to its own corner square so they don't overlap.
+        cornerArc(r, b.x(), b.y(), rad, b.x() + rad, b.y() + rad, argb);
+        cornerArc(r, b.right() - rad, b.y(), rad, b.right() - rad, b.y() + rad, argb);
+        cornerArc(r, b.x(), b.bottom() - rad, rad, b.x() + rad, b.bottom() - rad, argb);
+        cornerArc(r, b.right() - rad, b.bottom() - rad, rad, b.right() - rad, b.bottom() - rad, argb);
+    }
+
+    /** Fills one rounded corner: a quarter circle clipped to the rad x rad corner cell. */
+    private static void cornerArc(Renderer r, int cellX, int cellY, int rad, double cx, double cy,
+                                  int argb) {
+        r.pushClip(new Rect(cellX, cellY, rad, rad));
+        r.filledCircle(cx, cy, rad, argb);
+        r.popClip();
     }
 
     /** Rounded rectangle with a vertical top-&gt;bottom gradient. */
@@ -43,10 +53,10 @@ public final class UiDraw {
         r.gradientVertical(new Rect(b.x() + rad, b.y(), b.w() - 2 * rad, b.h()), top, bottom);
         r.gradientVertical(new Rect(b.x(), b.y() + rad, rad, b.h() - 2 * rad), top, bottom);
         r.gradientVertical(new Rect(b.right() - rad, b.y() + rad, rad, b.h() - 2 * rad), top, bottom);
-        r.filledCircle(b.x() + rad, b.y() + rad, rad, top);
-        r.filledCircle(b.right() - rad, b.y() + rad, rad, top);
-        r.filledCircle(b.x() + rad, b.bottom() - rad, rad, bottom);
-        r.filledCircle(b.right() - rad, b.bottom() - rad, rad, bottom);
+        cornerArc(r, b.x(), b.y(), rad, b.x() + rad, b.y() + rad, top);
+        cornerArc(r, b.right() - rad, b.y(), rad, b.right() - rad, b.y() + rad, top);
+        cornerArc(r, b.x(), b.bottom() - rad, rad, b.x() + rad, b.bottom() - rad, bottom);
+        cornerArc(r, b.right() - rad, b.bottom() - rad, rad, b.right() - rad, b.bottom() - rad, bottom);
     }
 
     /** Soft rounded border traced along the edges and quarter-arc corners (no full circles). */
