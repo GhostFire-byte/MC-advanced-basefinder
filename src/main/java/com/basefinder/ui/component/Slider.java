@@ -37,8 +37,10 @@ public final class Slider extends Component {
         int value = clamp(getter.get());
         if (theme.imgui()) {
             // ImGui slider: label above, a framed track with a grab and centered value.
+            int labelH = r.lineHeight();
             r.text(label, bounds.x(), bounds.y(), th.text(), true);
-            Rect frame = new Rect(bounds.x(), bounds.y() + bounds.h() - 16, bounds.w(), 15);
+            int fy = bounds.y() + labelH + 3;
+            Rect frame = new Rect(bounds.x(), fy, bounds.w(), Math.max(14, bounds.bottom() - fy));
             UiDraw.roundedRect(r, frame, 2, th.panelTop());
             UiDraw.roundedOutline(r, frame, 2, UiColor.withAlpha(th.border(), 200), 1f);
             double tt = (value - min) / (double) (max - min);
@@ -47,7 +49,8 @@ public final class Slider extends Component {
             UiDraw.roundedRect(r, new Rect(gx, frame.y() + 1, grabW, frame.h() - 2), 2,
                     UiColor.withAlpha(th.accent(), 235));
             String vs = String.valueOf(value);
-            r.text(vs, frame.centerX() - r.textWidth(vs) / 2, frame.y() + 3, th.text(), true);
+            r.text(vs, frame.centerX() - r.textWidth(vs) / 2, frame.centerY() - r.lineHeight() / 2,
+                    th.text(), true);
             return;
         }
         r.text(label, bounds.x(), bounds.y(), th.text(), true);

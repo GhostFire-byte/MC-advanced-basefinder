@@ -16,12 +16,15 @@ public final class GuiShot {
     public static void main(String[] args) throws Exception {
         String outDir = args.length > 0 ? args[0] : ".";
         new File(outDir).mkdirs();
-        shot(outDir + "/windui.png", GuiStyle.WINDUI, "Night");
-        shot(outDir + "/imgui.png", GuiStyle.IMGUI, "ImGui Classic");
+        String[] tabs = {"overview", "scanners", "findings", "rules", "appearance", "diagnostics"};
+        for (int t = 0; t < tabs.length; t++) {
+            shot(outDir + "/windui-" + t + "-" + tabs[t] + ".png", GuiStyle.WINDUI, "Night", t);
+            shot(outDir + "/imgui-" + t + "-" + tabs[t] + ".png", GuiStyle.IMGUI, "ImGui Classic", t);
+        }
         System.out.println("wrote screenshots to " + new File(outDir).getAbsolutePath());
     }
 
-    private static void shot(String path, GuiStyle style, String theme) throws Exception {
+    private static void shot(String path, GuiStyle style, String theme, int tab) throws Exception {
         int w = 1180;
         int h = 680;
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
@@ -37,9 +40,9 @@ public final class GuiShot {
         ui.theme().selectPreset(theme);
         OverlayRoot root = new OverlayRoot(ui, ui);
         root.setInteractionMode(true);
+        root.selectDashboardTab(tab);
         root.state().dashFade = 1.0; // skip the fade for a clean still
         Java2dRenderer r = new Java2dRenderer();
-        // render a few times so eased widgets settle
         for (int i = 0; i < 4; i++) {
             r.begin(g, w, h);
             root.render(r);

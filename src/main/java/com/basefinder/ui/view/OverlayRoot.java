@@ -46,6 +46,15 @@ public final class OverlayRoot {
         return state;
     }
 
+    /** Selects a dashboard tab (preview/screenshot + host integration helper). */
+    public void selectDashboardTab(int index) {
+        dashboard.selectTab(index);
+    }
+
+    public int dashboardTabCount() {
+        return dashboard.tabCount();
+    }
+
     public boolean interactionMode() {
         return interactionMode;
     }

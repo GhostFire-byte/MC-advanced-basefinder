@@ -79,6 +79,17 @@ public final class DashboardView {
         return window;
     }
 
+    /** Selects a tab by index (for the preview/screenshot tool and host integration). */
+    public void selectTab(int index) {
+        if (index >= 0 && index < TABS.size()) {
+            selectedTab = index;
+        }
+    }
+
+    public int tabCount() {
+        return TABS.size();
+    }
+
     public Rect titleBar() {
         return titleBar;
     }
@@ -228,28 +239,42 @@ public final class DashboardView {
     }
 
     private void layoutAppearance(Rect body) {
+        double s = state.uiScale;
         int x = body.x();
         int y = body.y();
+        int bw = (int) Math.round(150 * s);
+        int bh = (int) Math.round(24 * s);
+        int gapX = (int) Math.round(10 * s);
+        int gapY = (int) Math.round(6 * s);
+        int cols = Math.max(1, Math.min(3, body.w() / (bw + gapX)));
         int i = 0;
         for (Theme t : model.theme().presets()) {
+            int cx = x + (i % cols) * (bw + gapX);
+            int cy = y + (i / cols) * (bh + gapY);
             add(new Button(t.name()).secondary().onClick(() -> commands.selectTheme(t.name())),
-                    new Rect(x + (i % 3) * 120, y + (i / 3) * 24, 114, 20));
+                    new Rect(cx, cy, bw, bh));
             i++;
         }
-        y += ((i + 2) / 3) * 24 + 6;
+        y += ((i + cols - 1) / cols) * (bh + gapY) + (int) Math.round(12 * s);
+        int rowH = (int) Math.round(40 * s);
         add(new Button(model.theme().styleMode() == StyleMode.POLISHED ? "Style: Polished" : "Style: Flat")
                 .onClick(() -> commands.setFlatStyle(model.theme().styleMode() == StyleMode.POLISHED)),
-                new Rect(x, y, 130, 20));
+                new Rect(x, y, (int) Math.round(150 * s), bh));
         add(new Slider("Opacity", 80, 255, () -> model.theme().active().opacity(),
-                v -> model.theme().active().setOpacity(v)), new Rect(x + 140, y, 160, 24));
-        y += 30;
+                v -> model.theme().active().setOpacity(v)),
+                new Rect(x + (int) Math.round(170 * s), y, (int) Math.round(180 * s), (int) Math.round(30 * s)));
+        y += rowH;
         add(new Slider("UI scale %", 80, 200, () -> (int) Math.round(state.uiScale * 100),
-                v -> state.uiScale = v / 100.0), new Rect(x, y, 200, 24));
+                v -> state.uiScale = v / 100.0),
+                new Rect(x, y, (int) Math.round(220 * s), (int) Math.round(30 * s)));
         add(new Button("Reset layout").secondary().onClick(state::resetLayout),
-                new Rect(x + 210, y, 120, 20));
-        y += 40;
-        // GUI style selector (persistent instance so its open state survives re-layout).
-        add(guiStyleDropdown, new Rect(x, y, 160, 22));
+                new Rect(x + (int) Math.round(240 * s), y, (int) Math.round(130 * s), bh));
+        y += rowH;
+        add(guiStyleDropdown, new Rect(x, y + r_lineGap(), (int) Math.round(180 * s), (int) Math.round(24 * s)));
+    }
+
+    private int r_lineGap() {
+        return (int) Math.round(12 * state.uiScale);
     }
 
     private void add(Component c, Rect bounds) {

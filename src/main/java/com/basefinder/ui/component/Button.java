@@ -58,7 +58,7 @@ public final class Button extends Component {
             UiDraw.fitText(r, label, bounds, ink, 1.0f, 0.72f);
             return;
         }
-        int rad = Math.min(12, bounds.h() / 2);
+        int rad = Math.min(6, bounds.h() / 2);
         int ink;
         if (primary) {
             int fill = UiColor.lerp(th.accent(), UiColor.rgb(255, 255, 255), 0.12 * hv);
