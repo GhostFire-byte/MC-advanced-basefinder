@@ -1,0 +1,60 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'com.basefinder'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+// ---------------------------------------------------------------------------
+// Source sets
+//   main : the full engine/scanners/rules/ui. References Minecraft ONLY through
+//          interfaces, so it builds & tests with no Minecraft on the classpath.
+//   mc   : thin Minecraft 26.2 adapters. Compiled only when -PmcJar points at a
+//          deobfuscated 26.2 client jar (i.e. during host-client integration).
+// ---------------------------------------------------------------------------
+sourceSets {
+    mc {
+        java.srcDir 'src/mc/java'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.11.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // The Minecraft client jar, supplied at integration time, compiles src/mc.
+    if (project.hasProperty('mcJar')) {
+        mcCompileOnly files(project.property('mcJar'))
+    }
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    // Simulated-data tests only; no real Minecraft is launched here.
+    systemProperty 'basefinder.headless', 'true'
+    jvmArgs '-XX:+UseG1GC'
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+}
+
+// Convenience: only meaningful with -PmcJar. Kept out of the default build.
+tasks.register('compileMc') {
+    group = 'build'
+    description = 'Compiles the Minecraft 26.2 adapters (requires -PmcJar).'
+    dependsOn 'compileMcJava'
+}
